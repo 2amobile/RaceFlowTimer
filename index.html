@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin RaceFlow Timer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <div class="admin-wrapper">
+        <header class="main-header">
+            <div class="logo-container">
+                <i class="fas fa-cogs header-icon"></i>
+                <h1>Admin RaceFlow Timer</h1>
+            </div>
+        </header>
+
+        <main class="admin-main-content">
+            <div class="admin-grid">
+                <section class="card">
+                    <h2 class="card-title"><i class="fas fa-calendar-alt icon"></i> Gestion des Plannings</h2>
+                    <div class="schedule-management">
+                        <div class="form-group">
+                            <label for="scheduleName"><i class="fas fa-file-signature icon"></i> Nom du Planning Actuel/Nouveau :</label>
+                            <input type="text" id="scheduleName" placeholder="Ex: Week-end FSVK Le Mans">
+                        </div>
+                        <div class="form-group">
+                            <label for="preSessionWarningTime"><i class="fas fa-bell icon"></i> Alerte pré-séance (min) :</label>
+                            <input type="number" id="preSessionWarningTime" value="15" min="1" max="120" step="1">
+                        </div>
+                        <div class="button-group">
+                            <button id="saveSchedule" class="btn btn-primary"><i class="fas fa-save icon"></i> Sauvegarder</button>
+                            <button id="deleteScheduleBtn" class="btn btn-danger"><i class="fas fa-trash-alt icon"></i> Supprimer ce Planning</button>
+                        </div>
+                    </div>
+                    <div class="schedule-load">
+                        <div class="form-group">
+                            <label for="loadScheduleSelect"><i class="fas fa-folder-open icon"></i> Charger un Planning Existant :</label>
+                            <select id="loadScheduleSelect">
+                                <option value="">Sélectionnez un planning...</option>
+                            </select>
+                        </div>
+                        <button id="loadScheduleBtn" class="btn btn-secondary"><i class="fas fa-download icon"></i> Charger</button>
+                    </div>
+                     <div class="display-launch card-section">
+                        <h3 class="card-subtitle"><i class="fas fa-tv icon"></i> Affichage Pilote</h3>
+                        <button id="launchDisplayBtn" class="btn btn-launch"><i class="fas fa-rocket icon"></i> Lancer l'Affichage Pilote</button>
+                        <p class="note">Le planning actif (nommé ci-dessus) sera utilisé.</p>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2 class="card-title"><i class="fas fa-plus-circle icon"></i> Ajouter / Modifier une Séance</h2>
+                    <form id="sessionForm">
+                        <input type="hidden" id="sessionId">
+                        <div class="form-group">
+                            <label for="sessionDay"><i class="fas fa-calendar-day icon"></i> Jour de la Séance :</label>
+                            <select id="sessionDay" required>
+                                <option value="1">Lundi</option>
+                                <option value="2">Mardi</option>
+                                <option value="3">Mercredi</option>
+                                <option value="4">Jeudi</option>
+                                <option value="5">Vendredi</option>
+                                <option value="6">Samedi</option>
+                                <option value="0">Dimanche</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="category"><i class="fas fa-tags icon"></i> Catégorie :</label>
+                            <input type="text" id="category" list="categorySuggestions" required placeholder="Ex: Moto3, Promotion, etc.">
+                            <datalist id="categorySuggestions"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label for="sessionType"><i class="fas fa-clipboard-list icon"></i> Type de Séance :</label>
+                            <input type="text" id="sessionType" list="sessionTypeSuggestions" required placeholder="Ex: Essais Libres 1, Qualif., Course">
+                            <datalist id="sessionTypeSuggestions"></datalist>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="startTime"><i class="fas fa-clock icon"></i> Heure Début :</label>
+                                <input type="time" id="startTime" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="duration"><i class="fas fa-hourglass-half icon"></i> Durée (min) :</label>
+                                <input type="number" id="duration" min="1" required placeholder="min">
+                            </div>
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" id="addSessionBtn" class="btn btn-primary"><i class="fas fa-check icon"></i> Ajouter/Valider</button>
+                            <button type="button" id="clearFormBtn" class="btn btn-secondary"><i class="fas fa-times icon"></i> Annuler</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="card large-card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-stream icon"></i> Séances du Planning Actif</h2>
+                        <button id="clearAllSessionsBtn" class="btn btn-danger btn-small"><i class="fas fa-eraser icon"></i> Tout Effacer</button>
+                    </div>
+                    <ul id="sessionsListAdmin" class="session-list">
+                        <li class="empty-state">Aucune séance programmée. Ajoutez-en une !</li>
+                    </ul>
+                </section>
+            </div>
+        </main>
+    </div>
+    <script src="app_admin.js"></script>
+</body>
+</html>
