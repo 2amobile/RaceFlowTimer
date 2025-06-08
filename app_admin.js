@@ -11,7 +11,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearAllSessionsBtn = document.getElementById('clearAllSessionsBtn');
 
     const scheduleNameInput = document.getElementById('scheduleName');
-    const preSessionWarningTimeInput = document.getElementById('preSessionWarningTime'); // Nouveau champ
+    const preSessionWarningTimeInput = document.getElementById('preSessionWarningTime');
+    const preSessionWarningTimeLabel = document.getElementById('preSessionWarningTimeLabel');
+    const mainTimerSizeInput = document.getElementById('mainTimerSize');
+    const mainTimerSizeLabel = document.getElementById('mainTimerSizeLabel');
+    const titleSizeInput = document.getElementById('titleSize');
+    const titleSizeLabel = document.getElementById('titleSizeLabel');
+    const secondaryTimerSizeInput = document.getElementById('secondaryTimerSize');
+    const secondaryTimerSizeLabel = document.getElementById('secondaryTimerSizeLabel');
+    
     const saveScheduleBtn = document.getElementById('saveSchedule');
     const loadScheduleSelect = document.getElementById('loadScheduleSelect');
     const loadScheduleBtn = document.getElementById('loadScheduleBtn');
@@ -20,11 +28,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const categorySuggestions = document.getElementById('categorySuggestions');
     const sessionTypeSuggestions = document.getElementById('sessionTypeSuggestions');
+    
+    const settingsModal = document.getElementById('settingsModal');
+    const openSettingsModalBtn = document.getElementById('openSettingsModalBtn');
+    const closeSettingsModalBtn = document.getElementById('closeSettingsModalBtn');
+    const closeModalAndSaveBtn = document.getElementById('closeModalAndSaveBtn');
+
 
     let sessions = [];
     let editingSessionId = null;
     const LOCAL_STORAGE_PREFIX = 'race_schedule_';
     const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+
+    openSettingsModalBtn.addEventListener('click', () => {
+        settingsModal.style.display = 'flex';
+    });
+
+    const closeModal = () => {
+        settingsModal.style.display = 'none';
+    };
+
+    closeSettingsModalBtn.addEventListener('click', closeModal);
+    closeModalAndSaveBtn.addEventListener('click', closeModal);
+
+    window.addEventListener('click', (event) => {
+        if (event.target == settingsModal) {
+            closeModal();
+        }
+    });
+
+    preSessionWarningTimeInput.addEventListener('input', (e) => preSessionWarningTimeLabel.textContent = e.target.value);
+    mainTimerSizeInput.addEventListener('input', (e) => mainTimerSizeLabel.textContent = e.target.value);
+    titleSizeInput.addEventListener('input', (e) => titleSizeLabel.textContent = e.target.value);
+    secondaryTimerSizeInput.addEventListener('input', (e) => secondaryTimerSizeLabel.textContent = e.target.value);
 
     function formatTimeForStorage(timeStr) { 
         return timeStr; 
@@ -34,11 +70,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return '_' + Math.random().toString(36).substr(2, 9);
     }
 
+    function checkSessionOverlap(newSessionDetails, existingSessions, currentEditingId) {
+        const newDay = parseInt(newSessionDetails.dayOfWeek);
+        const [newStartH, newStartM] = newSessionDetails.time.split(':').map(Number);
+        const newStartTimeInMinutes = (newStartH * 60) + newStartM;
+        const newEndTimeInMinutes = newStartTimeInMinutes + parseInt(newSessionDetails.duration);
+
+        for (const existingSession of existingSessions) {
+            if (currentEditingId && existingSession.id === currentEditingId) {
+                continue;
+            }
+
+            if (parseInt(existingSession.dayOfWeek) === newDay) {
+                const [existingStartH, existingStartM] = existingSession.time.split(':').map(Number);
+                const existingStartTimeInMinutes = (existingStartH * 60) + existingStartM;
+                const existingEndTimeInMinutes = existingStartTimeInMinutes + parseInt(existingSession.duration);
+
+                if (newStartTimeInMinutes < existingEndTimeInMinutes && newEndTimeInMinutes > existingStartTimeInMinutes) {
+                    return true; 
+                }
+            }
+        }
+        return false; 
+    }
+
+
     function renderAdminList() {
         sessionsListAdmin.innerHTML = '';
         const sortedSessions = [...sessions].sort((a, b) => {
-            if (a.dayOfWeek !== b.dayOfWeek) {
-                return a.dayOfWeek - b.dayOfWeek;
+            if (parseInt(a.dayOfWeek) !== parseInt(b.dayOfWeek)) {
+                return parseInt(a.dayOfWeek) - parseInt(b.dayOfWeek);
             }
             return a.time.localeCompare(b.time);
         });
@@ -85,15 +146,36 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Veuillez remplir tous les champs correctement (durée > 0).'); return;
         }
 
+        const sessionCandidateDetails = { dayOfWeek, time, duration };
+        
+        if (checkSessionOverlap(sessionCandidateDetails, sessions, editingSessionId)) {
+            alert("Erreur : Conflit d'horaire ! Cette séance se chevauche avec une autre séance existante le même jour.");
+            return; 
+        }
+
         if (editingSessionId) {
             const index = sessions.findIndex(s => s.id === editingSessionId);
             if (index > -1) {
-                sessions[index] = { ...sessions[index], dayOfWeek, category, sessionType, time, duration };
+                sessions[index] = { 
+                    ...sessions[index],
+                    dayOfWeek, 
+                    category, 
+                    sessionType, 
+                    time, 
+                    duration 
+                };
             }
             editingSessionId = null;
             addSessionBtn.innerHTML = '<i class="fas fa-check icon"></i> Ajouter/Valider';
         } else {
-            sessions.push({ id: generateId(), dayOfWeek, category, sessionType, time, duration });
+            sessions.push({ 
+                id: generateId(), 
+                dayOfWeek, 
+                category, 
+                sessionType, 
+                time, 
+                duration 
+            });
         }
         
         categoryInput.value = '';
@@ -109,7 +191,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionForm.reset();
         const today = new Date().getDay(); 
         sessionDayInput.value = today; 
-        preSessionWarningTimeInput.value = 15; // Reset warning time too
         editingSessionId = null;
         addSessionBtn.innerHTML = '<i class="fas fa-check icon"></i> Ajouter/Valider';
         categoryInput.focus();
@@ -130,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 sessionTypeInput.value = session.sessionType;
                 startTimeInput.value = session.time; 
                 durationInput.value = session.duration;
-                editingSessionId = session.id;
+                editingSessionId = session.id; 
                 addSessionBtn.innerHTML = '<i class="fas fa-check icon"></i> Modifier Séance';
                 categoryInput.focus();
             }
@@ -143,13 +224,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     clearAllSessionsBtn.addEventListener('click', () => {
-        if (confirm('Voulez-vous vraiment effacer toutes les séances du planning actuel ?')) {
+        if (confirm('Voulez-vous vraiment effacer toutes les séances du planning actuel (non sauvegardé) ?')) {
             sessions = [];
             renderAdminList();
             sessionForm.reset();
             const today = new Date().getDay(); 
             sessionDayInput.value = today;
-            preSessionWarningTimeInput.value = 15;
             editingSessionId = null;
             addSessionBtn.innerHTML = '<i class="fas fa-check icon"></i> Ajouter/Valider';
         }
@@ -175,12 +255,13 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Veuillez donner un nom au planning.'); scheduleNameInput.focus(); return;
         }
         
-        const currentPreSessionWarningTime = parseInt(preSessionWarningTimeInput.value) || 15;
-
         const scheduleData = {
-            sessions: sessions, // sessions est déjà un tableau d'objets simples
+            sessions: sessions, 
             settings: {
-                preSessionWarningMinutes: currentPreSessionWarningTime
+                preSessionWarningMinutes: parseInt(preSessionWarningTimeInput.value) || 15,
+                mainTimerSize: parseFloat(mainTimerSizeInput.value) || 100,
+                titleSize: parseFloat(titleSizeInput.value) || 100,
+                secondaryTimerSize: parseFloat(secondaryTimerSizeInput.value) || 100
             }
         };
 
@@ -206,13 +287,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savedScheduleJSON) {
             try {
                 const loadedData = JSON.parse(savedScheduleJSON);
-                if (loadedData.sessions && loadedData.settings) { // Nouveau format avec settings
+                
+                if (loadedData.sessions && loadedData.settings) { 
                     sessions = loadedData.sessions;
                     preSessionWarningTimeInput.value = loadedData.settings.preSessionWarningMinutes || 15;
-                } else { // Ancien format (juste un tableau de sessions)
-                    sessions = loadedData; // loadedData est directement le tableau sessions
-                    preSessionWarningTimeInput.value = 15; // Valeur par défaut pour anciens plannings
+                    mainTimerSizeInput.value = loadedData.settings.mainTimerSize || 100;
+                    titleSizeInput.value = loadedData.settings.titleSize || 100;
+                    secondaryTimerSizeInput.value = loadedData.settings.secondaryTimerSize || 100;
+                } else { 
+                    sessions = loadedData; 
+                    preSessionWarningTimeInput.value = 15;
+                    mainTimerSizeInput.value = 100;
+                    titleSizeInput.value = 100;
+                    secondaryTimerSizeInput.value = 100;
                 }
+                
+                preSessionWarningTimeLabel.textContent = preSessionWarningTimeInput.value;
+                mainTimerSizeLabel.textContent = mainTimerSizeInput.value;
+                titleSizeLabel.textContent = titleSizeInput.value;
+                secondaryTimerSizeLabel.textContent = secondaryTimerSizeInput.value;
+
                 renderAdminList();
                 scheduleNameInput.value = name;
                 alert(`Planning '${name}' chargé.`);
@@ -276,7 +370,14 @@ document.addEventListener('DOMContentLoaded', () => {
         populateLoadScheduleDropdown();
         const today = new Date().getDay(); 
         sessionDayInput.value = today; 
-        preSessionWarningTimeInput.value = 15; // Valeur par défaut au chargement
+        preSessionWarningTimeInput.value = 15; 
+        mainTimerSizeInput.value = 100;
+        titleSizeInput.value = 100;
+        secondaryTimerSizeInput.value = 100;
+        preSessionWarningTimeLabel.textContent = preSessionWarningTimeInput.value;
+        mainTimerSizeLabel.textContent = mainTimerSizeInput.value;
+        titleSizeLabel.textContent = titleSizeInput.value;
+        secondaryTimerSizeLabel.textContent = secondaryTimerSizeInput.value;
     }
     initAdmin();
 });

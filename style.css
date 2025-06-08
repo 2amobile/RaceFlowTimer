@@ -104,12 +104,14 @@ body {
     gap: var(--padding-large);
 }
 
-@media (min-width: 1024px) { 
+@media (min-width: 1200px) { 
     .admin-grid {
-        grid-template-columns: 1fr 1.5fr; 
+        grid-template-columns: 1fr 2fr 1fr; 
+        grid-template-rows: auto;
     }
     .large-card { 
-        grid-row: span 2;
+        grid-column: 2 / 3; 
+        grid-row: 1 / 3; 
     }
 }
 
@@ -200,6 +202,36 @@ input:focus, select:focus {
 input[type="time"]::-webkit-calendar-picker-indicator {
     filter: invert(70%) sepia(30%) saturate(500%) hue-rotate(130deg);
     cursor: pointer;
+}
+input[type="range"].slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    background: var(--color-border);
+    border-radius: 5px;
+    outline: none;
+    opacity: 0.7;
+    transition: opacity .2s;
+}
+input[type="range"].slider:hover {
+    opacity: 1;
+}
+input[type="range"].slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--color-accent-primary);
+    cursor: pointer;
+    border-radius: 50%;
+}
+input[type="range"].slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--color-accent-primary);
+    cursor: pointer;
+    border-radius: 50%;
 }
 
 .form-row {
@@ -424,9 +456,32 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     box-shadow: var(--shadow-small);
     text-align: center;
 }
+
+.secondary-countdown {
+    display: none; 
+    font-family: var(--font-primary);
+    /* font-size est géré par JS */
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    background-color: rgba(0,0,0,0.25);
+    padding: var(--padding-small);
+    border-radius: var(--border-radius-small);
+    margin: 0 auto var(--padding-medium); 
+    border: 1px solid var(--color-border);
+    max-width: 90%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.secondary-countdown .highlight {
+    color: var(--color-success); 
+    font-weight: 700;
+}
+
 .countdown-status-text {
     font-family: var(--font-display);
-    font-size: calc(var(--dynamic-font-unit) * 3 * 1.2); /* +20% */
+    /* font-size est géré par JS */
     color: var(--color-accent-secondary);
     margin-bottom: calc(var(--dynamic-font-unit) * 0.5);
     font-weight: 500;
@@ -434,7 +489,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 .countdown-category-text, .countdown-session-text {
     font-family: var(--font-display);
-    font-size: calc(var(--dynamic-font-unit) * 4 * 1.2); /* +20% */
+    /* font-size est géré par JS */
     color: var(--color-text-primary);
     margin-bottom: calc(var(--dynamic-font-unit) * 0.5);
     font-weight: 700;
@@ -445,21 +500,21 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     white-space: nowrap;
 }
 .countdown-session-text {
-    font-size: calc(var(--dynamic-font-unit) * 3.2 * 1.2); /* +20% */
+    /* font-size est géré par JS */
     color: var(--color-text-secondary);
     margin-bottom: calc(var(--dynamic-font-unit) * 1);
     font-weight: 500;
 }
 .countdown-timer-digits {
     font-family: var(--font-display);
-    font-size: calc(var(--dynamic-font-unit) * 12 * 1.2); /* +20% */
+    /* font-size est géré par JS */
     font-weight: 900;
     color: var(--color-accent-primary);
     padding: calc(var(--dynamic-font-unit) * 0.2) calc(var(--dynamic-font-unit) * 1);
     background-color: var(--color-background-dark);
     border-radius: var(--border-radius-small);
     display: inline-block;
-    min-width: calc(var(--dynamic-font-unit) * 28 * 1.2); /* +20% approx */
+    min-width: calc(var(--dynamic-font-unit) * 37); 
     letter-spacing: 2px;
     border: 2px solid var(--color-border);
     line-height: 1; 
@@ -496,7 +551,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 .upcoming-title {
     font-family: var(--font-display);
-    font-size: calc(var(--dynamic-font-unit) * 2.5 * 1.2); /* +20% */
+    /* font-size est géré par JS */
     color: var(--color-text-secondary);
     margin-bottom: calc(var(--dynamic-font-unit) * 1);
     text-transform: uppercase;
@@ -517,11 +572,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     margin: 0 auto calc(var(--dynamic-font-unit) * 0.5);
     max-width: 90%;
     border-radius: var(--border-radius-small);
-    font-size: calc(var(--dynamic-font-unit) * 1.8); 
+    /* font-size est géré par JS */
     text-align: left;
-    /* La bordure gauche sera définie par JS pour la couleur par catégorie */
-    border-left-width: 5px; /* Épaisseur de la bordure de couleur */
-    border-left-style: solid; /* Style de la bordure */
+    border-left-width: 5px; 
+    border-left-style: solid; 
     transition: background-color 0.2s ease;
     white-space: nowrap;
     overflow: hidden;
@@ -533,7 +587,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     color: var(--color-background-dark);
     padding: calc(var(--dynamic-font-unit) * 0.2) calc(var(--dynamic-font-unit) * 0.6);
     border-radius: var(--border-radius-small);
-    font-size: calc(var(--dynamic-font-unit) * 1.3); 
+    font-size: 0.8em; /* Relatif à son parent li */
     font-weight: 700;
     margin-right: calc(var(--dynamic-font-unit) * 0.6); 
     vertical-align: middle;
@@ -591,4 +645,60 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 ::-webkit-scrollbar-thumb:hover {
     background: var(--color-accent-primary);
+}
+
+/* === NOUVEAUX STYLES POUR LA MODALE === */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.7); 
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: var(--color-background-medium);
+    padding: var(--padding-large);
+    border-radius: var(--border-radius-medium);
+    border: 1px solid var(--color-border);
+    width: 90%;
+    max-width: 600px;
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {transform: translateY(-50px); opacity: 0;}
+    to {transform: translateY(0); opacity: 1;}
+}
+
+.modal-close {
+    color: var(--color-text-secondary);
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 32px;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+.modal-close:hover,
+.modal-close:focus {
+    color: var(--color-text-primary);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-content .card {
+    box-shadow: none;
+    background-color: transparent;
+    padding: 0;
+    gap: var(--padding-large); 
 }

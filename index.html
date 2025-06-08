@@ -28,10 +28,6 @@
                             <label for="scheduleName"><i class="fas fa-file-signature icon"></i> Nom du Planning Actuel/Nouveau :</label>
                             <input type="text" id="scheduleName" placeholder="Ex: Week-end FSVK Le Mans">
                         </div>
-                        <div class="form-group">
-                            <label for="preSessionWarningTime"><i class="fas fa-bell icon"></i> Alerte pré-séance (min) :</label>
-                            <input type="number" id="preSessionWarningTime" value="15" min="1" max="120" step="1">
-                        </div>
                         <div class="button-group">
                             <button id="saveSchedule" class="btn btn-primary"><i class="fas fa-save icon"></i> Sauvegarder</button>
                             <button id="deleteScheduleBtn" class="btn btn-danger"><i class="fas fa-trash-alt icon"></i> Supprimer ce Planning</button>
@@ -49,8 +45,20 @@
                      <div class="display-launch card-section">
                         <h3 class="card-subtitle"><i class="fas fa-tv icon"></i> Affichage Pilote</h3>
                         <button id="launchDisplayBtn" class="btn btn-launch"><i class="fas fa-rocket icon"></i> Lancer l'Affichage Pilote</button>
-                        <p class="note">Le planning actif (nommé ci-dessus) sera utilisé.</p>
                     </div>
+                    <div class="settings-launch card-section">
+                        <button id="openSettingsModalBtn" class="btn btn-secondary"><i class="fas fa-sliders-h icon"></i> Réglages d'Affichage</button>
+                    </div>
+                </section>
+
+                <section class="card large-card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fas fa-stream icon"></i> Séances du Planning Actif</h2>
+                        <button id="clearAllSessionsBtn" class="btn btn-danger btn-small"><i class="fas fa-eraser icon"></i> Tout Effacer</button>
+                    </div>
+                    <ul id="sessionsListAdmin" class="session-list">
+                        <li class="empty-state">Aucune séance programmée. Ajoutez-en une !</li>
+                    </ul>
                 </section>
 
                 <section class="card">
@@ -58,7 +66,7 @@
                     <form id="sessionForm">
                         <input type="hidden" id="sessionId">
                         <div class="form-group">
-                            <label for="sessionDay"><i class="fas fa-calendar-day icon"></i> Jour de la Séance :</label>
+                            <label for="sessionDay"><i class="fas fa-calendar-day icon"></i> Jour :</label>
                             <select id="sessionDay" required>
                                 <option value="1">Lundi</option>
                                 <option value="2">Mardi</option>
@@ -95,19 +103,39 @@
                         </div>
                     </form>
                 </section>
-
-                <section class="card large-card">
-                    <div class="card-header">
-                        <h2 class="card-title"><i class="fas fa-stream icon"></i> Séances du Planning Actif</h2>
-                        <button id="clearAllSessionsBtn" class="btn btn-danger btn-small"><i class="fas fa-eraser icon"></i> Tout Effacer</button>
-                    </div>
-                    <ul id="sessionsListAdmin" class="session-list">
-                        <li class="empty-state">Aucune séance programmée. Ajoutez-en une !</li>
-                    </ul>
-                </section>
             </div>
         </main>
     </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeSettingsModalBtn" title="Fermer">&times;</span>
+            <section class="card">
+                <h2 class="card-title"><i class="fas fa-sliders-h icon"></i> Paramètres d'Affichage</h2>
+                <div class="form-group">
+                    <label for="preSessionWarningTime"><i class="fas fa-bell icon"></i> Alerte pré-séance : <span id="preSessionWarningTimeLabel">15</span> min</label>
+                    <input type="range" id="preSessionWarningTime" value="15" min="1" max="120" step="1" class="slider">
+                </div>
+                <div class="form-group">
+                    <label for="mainTimerSize"><i class="fas fa-text-height icon"></i> Taille Timer Principal : <span id="mainTimerSizeLabel">100</span>%</label>
+                    <input type="range" id="mainTimerSize" value="100" min="50" max="150" step="5" class="slider">
+                </div>
+                <div class="form-group">
+                    <label for="titleSize"><i class="fas fa-text-height icon"></i> Taille Titres : <span id="titleSizeLabel">100</span>%</label>
+                    <input type="range" id="titleSize" value="100" min="50" max="150" step="5" class="slider">
+                </div>
+                <div class="form-group">
+                    <label for="secondaryTimerSize"><i class="fas fa-text-height icon"></i> Taille Timer Secondaire : <span id="secondaryTimerSizeLabel">100</span>%</label>
+                    <input type="range" id="secondaryTimerSize" value="100" min="50" max="150" step="5" class="slider">
+                </div>
+                <div class="button-group" style="justify-content: flex-end;">
+                     <button id="closeModalAndSaveBtn" class="btn btn-primary"><i class="fas fa-check icon"></i> Appliquer et Fermer</button>
+                </div>
+                <p class="note">N'oubliez pas de sauvegarder le planning principal pour conserver ces réglages.</p>
+            </section>
+        </div>
+    </div>
+
     <script src="app_admin.js"></script>
 </body>
 </html>

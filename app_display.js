@@ -7,14 +7,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainCountdownTimer = document.getElementById('mainCountdownTimer');
     const upcomingSessionsList = document.getElementById('upcomingSessionsList');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const secondaryCountdown = document.getElementById('secondaryCountdown');
 
     let sessions = [];
     let mainInterval;
-    let currentPreSessionWarningMinutes = 15; // Valeur par défaut, sera écrasée par le planning
+    let settings = {
+        preSessionWarningMinutes: 15,
+        mainTimerSize: 100,
+        titleSize: 100,
+        secondaryTimerSize: 100
+    };
     const LOCAL_STORAGE_PREFIX = 'race_schedule_';
     const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
     const dayNamesShort = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
-
     const categoryColors = [
         '#FF6B6B', '#4ECDC4', '#45B7D1', '#FED766', '#247BA0', 
         '#F0B67F', '#8A9B0F', '#C62E65', '#E29578', '#5465FF',
@@ -37,20 +42,46 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function getSessionDateTime(sessionDayOfWeek, sessionTimeHHMM) {
         const now = new Date();
-        const currentDayOfWeek = now.getDay(); 
+        const currentDayOfWeek = now.getDay();
         const [hours, minutes] = sessionTimeHHMM.split(':').map(Number);
         let dayOffset = sessionDayOfWeek - currentDayOfWeek;
+        
         const sessionDate = new Date(now);
-        sessionDate.setDate(now.getDate() + dayOffset); 
-        sessionDate.setHours(hours, minutes, 0, 0); 
+        sessionDate.setDate(now.getDate() + dayOffset);
+        sessionDate.setHours(hours, minutes, 0, 0);
         return sessionDate;
+    }
+
+    function applyDynamicStyles() {
+        if (!mainCountdownTimer) return;
+
+        const baseSizes = {
+            mainTimer: 19.1664,
+            titles: 4.8,      
+            secondaryTimer: 4.1184 
+        };
+
+        const mainTimerMultiplier = settings.mainTimerSize / 100;
+        const titleMultiplier = settings.titleSize / 100;
+        const secondaryTimerMultiplier = settings.secondaryTimerSize / 100;
+
+        mainCountdownTimer.style.fontSize = `calc(var(--dynamic-font-unit) * ${baseSizes.mainTimer * mainTimerMultiplier})`;
+        
+        mainCountdownCategory.style.fontSize = `calc(var(--dynamic-font-unit) * ${baseSizes.titles * titleMultiplier})`;
+        mainCountdownSessionType.style.fontSize = `calc(var(--dynamic-font-unit) * ${baseSizes.titles * 0.8 * titleMultiplier})`;
+        mainCountdownStatus.style.fontSize = `calc(var(--dynamic-font-unit) * ${baseSizes.titles * 0.75 * titleMultiplier})`;
+        upcomingSessionsList.style.fontSize = `calc(var(--dynamic-font-unit) * 1.8 * titleMultiplier * 0.9)`;
+        document.querySelector('.upcoming-title').style.fontSize = `calc(var(--dynamic-font-unit) * 3 * titleMultiplier * 0.9)`;
+
+
+        secondaryCountdown.style.fontSize = `calc(var(--dynamic-font-unit) * ${baseSizes.secondaryTimer * secondaryTimerMultiplier})`;
     }
 
     function loadScheduleFromUrlAndStorage() {
         const urlParams = new URLSearchParams(window.location.search);
         const scheduleName = urlParams.get('schedule');
 
-        assignedCategoryColors = {}; // Réinitialiser les couleurs à chaque chargement de planning
+        assignedCategoryColors = {}; 
         colorIndex = 0;
 
         if (currentScheduleNameDisplay) {
@@ -66,13 +97,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savedScheduleJSON) {
             try {
                 const loadedData = JSON.parse(savedScheduleJSON);
-                if (loadedData.sessions && loadedData.settings) { // Nouveau format
+                if (loadedData.sessions && loadedData.settings) {
                     sessions = loadedData.sessions;
-                    currentPreSessionWarningMinutes = parseInt(loadedData.settings.preSessionWarningMinutes) || 15;
-                } else { // Ancien format
-                    sessions = loadedData; // C'est directement le tableau des sessions
-                    currentPreSessionWarningMinutes = 15; // Valeur par défaut
+                    settings.preSessionWarningMinutes = parseInt(loadedData.settings.preSessionWarningMinutes) || 15;
+                    settings.mainTimerSize = parseFloat(loadedData.settings.mainTimerSize) || 100;
+                    settings.titleSize = parseFloat(loadedData.settings.titleSize) || 100;
+                    settings.secondaryTimerSize = parseFloat(loadedData.settings.secondaryTimerSize) || 100;
+                } else {
+                    sessions = loadedData;
                 }
+                applyDynamicStyles();
                 return true;
             } catch (error) {
                 displayError("Erreur", "Planning corrompu", scheduleName, "XX:XX");
@@ -95,18 +129,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function updateDisplayLogic() {
+        if(secondaryCountdown) secondaryCountdown.style.display = 'none';
+        
         const now = new Date();
         if (currentTimeDisplay) currentTimeDisplay.textContent = formatTimeWithSecondsForDisplay(now);
 
         if (!sessions || sessions.length === 0) {
-            // Si loadScheduleFromUrlAndStorage a été appelé et a échoué, sessions sera vide
-            // et l'erreur aura déjà été affichée. Si le planning chargé est vide, on affiche un message.
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('schedule')) { // Si un planning était censé être chargé
-                 mainCountdownStatus.textContent = "PLANNING VIDE";
-                 mainCountdownCategory.textContent = "--";
-                 mainCountdownSessionType.textContent = "--";
-                 mainCountdownTimer.textContent = "--:--";
+            if (urlParams.get('schedule')) {
+                 if(mainCountdownStatus) mainCountdownStatus.textContent = "PLANNING VIDE";
+                 if(mainCountdownCategory) mainCountdownCategory.textContent = "--";
+                 if(mainCountdownSessionType) mainCountdownSessionType.textContent = "--";
+                 if(mainCountdownTimer) mainCountdownTimer.textContent = "--:--";
                  if(upcomingSessionsList) upcomingSessionsList.innerHTML = '<li class="empty-state">Ce planning ne contient aucune séance.</li>';
             }
             return;
@@ -123,32 +157,49 @@ document.addEventListener('DOMContentLoaded', () => {
         
         for (const session of processedSessions) {
             const sessionEnd = new Date(session.dateTime.getTime() + session.duration * 60000);
-
             if (session.dateTime <= now && now < sessionEnd) {
                 currentSession = session;
-                break; 
             } else if (session.dateTime > now && !nextSession) {
                 nextSession = session;
             }
         }
         
-        let upcomingForDisplay = [];
-        if (currentSession) {
-            const currentSessionEnd = new Date(currentSession.dateTime.getTime() + currentSession.duration * 60000);
-            upcomingForDisplay = processedSessions.filter(s => s.dateTime > currentSessionEnd).slice(0, 5);
-        } else if (nextSession) {
-            const nextSessionIndex = processedSessions.findIndex(s => s.id === nextSession.id);
-            if (nextSessionIndex !== -1) {
-                 upcomingForDisplay = processedSessions.slice(nextSessionIndex, nextSessionIndex + 5);
-            }
-        } else { 
-             upcomingForDisplay = [];
-        }
-
         mainCountdownTimer.classList.remove('imminent', 'active');
-        mainCountdownTimer.style.animation = 'none'; 
+        mainCountdownTimer.style.animation = 'none';
 
-        if (currentSession) {
+        const preSessionWarningMillis = settings.preSessionWarningMinutes * 60 * 1000;
+        
+        if (currentSession && nextSession && (nextSession.dateTime - now <= preSessionWarningMillis)) {
+            
+            const currentSessionEnd = new Date(currentSession.dateTime.getTime() + currentSession.duration * 60000);
+            const remainingMillisCurrent = currentSessionEnd - now;
+            const remainingSecondsCurrent = Math.max(0, Math.floor(remainingMillisCurrent / 1000));
+            const minutesCurrent = Math.floor(remainingSecondsCurrent / 60);
+            const secondsCurrent = remainingSecondsCurrent % 60;
+            
+            secondaryCountdown.innerHTML = `
+                <i class="fas fa-play-circle icon" style="color:var(--color-success)"></i> 
+                ${currentSession.category} - ${currentSession.sessionType} | Temps restant : 
+                <span class="highlight">${String(minutesCurrent).padStart(2, '0')}:${String(secondsCurrent).padStart(2, '0')}</span>
+            `;
+            secondaryCountdown.style.display = 'block';
+
+            const timeToNextSessionMillis = nextSession.dateTime - now;
+            const timeToNextSessionSeconds = Math.max(0, Math.floor(timeToNextSessionMillis / 1000));
+            const minutesNext = Math.floor(timeToNextSessionSeconds / 60);
+            const secondsNext = timeToNextSessionSeconds % 60;
+            
+            mainCountdownStatus.textContent = `${dayNames[nextSession.dayOfWeek]} - DÉBUT DANS`;
+            mainCountdownCategory.textContent = nextSession.category;
+            mainCountdownSessionType.textContent = nextSession.sessionType;
+            mainCountdownTimer.textContent = `${String(minutesNext).padStart(2, '0')}:${String(secondsNext).padStart(2, '0')}`;
+            mainCountdownTimer.classList.add('imminent');
+            void mainCountdownTimer.offsetWidth;
+            if (mainCountdownTimer.style.animation !== 'pulse-orange-border 1.5s infinite') {
+               mainCountdownTimer.style.animation = 'pulse-orange-border 1.5s infinite';
+            }
+
+        } else if (currentSession) {
             const sessionEnd = new Date(currentSession.dateTime.getTime() + currentSession.duration * 60000);
             const remainingMillis = sessionEnd - now;
             const remainingSeconds = Math.max(0, Math.floor(remainingMillis / 1000));
@@ -171,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mainCountdownCategory.textContent = nextSession.category;
             mainCountdownSessionType.textContent = nextSession.sessionType;
 
-            if (timeToNextSessionMillis <= currentPreSessionWarningMinutes * 60 * 1000 && timeToNextSessionMillis > 0) {
+            if (timeToNextSessionMillis <= preSessionWarningMillis && timeToNextSessionMillis > 0) {
                 const days = Math.floor(timeToNextSessionSeconds / (24 * 60 * 60));
                 const hours = Math.floor((timeToNextSessionSeconds % (24*60*60)) / (60*60));
                 const minutes = Math.floor((timeToNextSessionSeconds % (60 * 60)) / 60);
@@ -204,6 +255,17 @@ document.addEventListener('DOMContentLoaded', () => {
             mainCountdownCategory.textContent = "--";
             mainCountdownSessionType.textContent = "--";
             mainCountdownTimer.textContent = "--:--";
+        }
+
+        let upcomingForDisplay = [];
+        if (currentSession) {
+            const currentSessionEnd = new Date(currentSession.dateTime.getTime() + currentSession.duration * 60000);
+            upcomingForDisplay = processedSessions.filter(s => s.dateTime > currentSessionEnd).slice(0, 5);
+        } else if (nextSession) {
+            const nextSessionIndex = processedSessions.findIndex(s => s.id === nextSession.id);
+            if (nextSessionIndex !== -1) {
+                 upcomingForDisplay = processedSessions.slice(nextSessionIndex, nextSessionIndex + 5);
+            }
         }
 
         upcomingSessionsList.innerHTML = '';
@@ -244,9 +306,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-
-    function initDisplay() {
-        if (loadScheduleFromUrlAndStorage()) { 
+    async function initDisplay() {
+        const loadedSuccessfully = await loadScheduleFromUrlAndStorage(); 
+        if (loadedSuccessfully) {
             if (mainInterval) clearInterval(mainInterval);
             updateDisplayLogic(); 
             mainInterval = setInterval(updateDisplayLogic, 1000);
