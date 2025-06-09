@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Éléments DOM
     const sessionForm = document.getElementById('sessionForm');
     const sessionDayInput = document.getElementById('sessionDay');
+    const isMechanicSessionCheckbox = document.getElementById('isMechanicSession');
+    const categoryFormGroup = document.getElementById('category-form-group');
     const categoryInput = document.getElementById('category');
     const sessionTypeInput = document.getElementById('sessionType');
     const startTimeInput = document.getElementById('startTime');
@@ -11,6 +14,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearAllSessionsBtn = document.getElementById('clearAllSessionsBtn');
 
     const scheduleNameInput = document.getElementById('scheduleName');
+    const saveScheduleBtn = document.getElementById('saveSchedule');
+    const loadScheduleSelect = document.getElementById('loadScheduleSelect');
+    const loadScheduleBtn = document.getElementById('loadScheduleBtn');
+    const deleteScheduleBtn = document.getElementById('deleteScheduleBtn');
+    const launchDisplayBtn = document.getElementById('launchDisplayBtn');
+    const launchMechanicDisplayBtn = document.getElementById('launchMechanicDisplayBtn');
+
+    const settingsModal = document.getElementById('settingsModal');
+    const openSettingsModalBtn = document.getElementById('openSettingsModalBtn');
+    const closeSettingsModalBtn = document.getElementById('closeSettingsModalBtn');
+    const closeModalAndSaveBtn = document.getElementById('closeModalAndSaveBtn');
+    
     const preSessionWarningTimeInput = document.getElementById('preSessionWarningTime');
     const preSessionWarningTimeLabel = document.getElementById('preSessionWarningTimeLabel');
     const mainTimerSizeInput = document.getElementById('mainTimerSize');
@@ -20,52 +35,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const secondaryTimerSizeInput = document.getElementById('secondaryTimerSize');
     const secondaryTimerSizeLabel = document.getElementById('secondaryTimerSizeLabel');
     
-    const saveScheduleBtn = document.getElementById('saveSchedule');
-    const loadScheduleSelect = document.getElementById('loadScheduleSelect');
-    const loadScheduleBtn = document.getElementById('loadScheduleBtn');
-    const deleteScheduleBtn = document.getElementById('deleteScheduleBtn');
-    const launchDisplayBtn = document.getElementById('launchDisplayBtn');
-
     const categorySuggestions = document.getElementById('categorySuggestions');
     const sessionTypeSuggestions = document.getElementById('sessionTypeSuggestions');
     
-    const settingsModal = document.getElementById('settingsModal');
-    const openSettingsModalBtn = document.getElementById('openSettingsModalBtn');
-    const closeSettingsModalBtn = document.getElementById('closeSettingsModalBtn');
-    const closeModalAndSaveBtn = document.getElementById('closeModalAndSaveBtn');
-
-
     let sessions = [];
     let editingSessionId = null;
     const LOCAL_STORAGE_PREFIX = 'race_schedule_';
     const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
 
+    // --- GESTION DE LA MODALE ---
     openSettingsModalBtn.addEventListener('click', () => {
         settingsModal.style.display = 'flex';
     });
-
     const closeModal = () => {
         settingsModal.style.display = 'none';
     };
-
     closeSettingsModalBtn.addEventListener('click', closeModal);
     closeModalAndSaveBtn.addEventListener('click', closeModal);
-
     window.addEventListener('click', (event) => {
         if (event.target == settingsModal) {
             closeModal();
         }
     });
 
+    // --- GESTION DES CURSEURS ---
     preSessionWarningTimeInput.addEventListener('input', (e) => preSessionWarningTimeLabel.textContent = e.target.value);
     mainTimerSizeInput.addEventListener('input', (e) => mainTimerSizeLabel.textContent = e.target.value);
     titleSizeInput.addEventListener('input', (e) => titleSizeLabel.textContent = e.target.value);
     secondaryTimerSizeInput.addEventListener('input', (e) => secondaryTimerSizeLabel.textContent = e.target.value);
 
-    function formatTimeForStorage(timeStr) { 
-        return timeStr; 
-    }
-    
+    // --- GESTION DE LA CASE A COCHER "SÉANCE MÉCANICIEN" ---
+    isMechanicSessionCheckbox.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            categoryFormGroup.style.display = 'none';
+            categoryInput.required = false; 
+        } else {
+            categoryFormGroup.style.display = 'block';
+            categoryInput.required = true;
+        }
+    });
+
+    // --- FONCTIONS PRINCIPALES ---
     function generateId() {
         return '_' + Math.random().toString(36).substr(2, 9);
     }
@@ -75,25 +85,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const [newStartH, newStartM] = newSessionDetails.time.split(':').map(Number);
         const newStartTimeInMinutes = (newStartH * 60) + newStartM;
         const newEndTimeInMinutes = newStartTimeInMinutes + parseInt(newSessionDetails.duration);
+        const isNewSessionMechanic = newSessionDetails.isMechanic;
 
         for (const existingSession of existingSessions) {
             if (currentEditingId && existingSession.id === currentEditingId) {
                 continue;
             }
+            if (!!existingSession.isMechanic === isNewSessionMechanic) {
+                if (parseInt(existingSession.dayOfWeek) === newDay) {
+                    const [existingStartH, existingStartM] = existingSession.time.split(':').map(Number);
+                    const existingStartTimeInMinutes = (existingStartH * 60) + existingStartM;
+                    const existingEndTimeInMinutes = existingStartTimeInMinutes + parseInt(existingSession.duration);
 
-            if (parseInt(existingSession.dayOfWeek) === newDay) {
-                const [existingStartH, existingStartM] = existingSession.time.split(':').map(Number);
-                const existingStartTimeInMinutes = (existingStartH * 60) + existingStartM;
-                const existingEndTimeInMinutes = existingStartTimeInMinutes + parseInt(existingSession.duration);
-
-                if (newStartTimeInMinutes < existingEndTimeInMinutes && newEndTimeInMinutes > existingStartTimeInMinutes) {
-                    return true; 
+                    if (newStartTimeInMinutes < existingEndTimeInMinutes && newEndTimeInMinutes > existingStartTimeInMinutes) {
+                        return true; 
+                    }
                 }
             }
         }
-        return false; 
+        return false;
     }
-
 
     function renderAdminList() {
         sessionsListAdmin.innerHTML = '';
@@ -110,11 +121,16 @@ document.addEventListener('DOMContentLoaded', () => {
             sortedSessions.forEach(session => {
                 const li = document.createElement('li');
                 li.dataset.id = session.id;
+                
+                const dayBadge = `<span class="session-day-badge">${dayNames[session.dayOfWeek]}</span>`;
+                const sessionDisplay = session.isMechanic 
+                    ? `<i class="fas fa-wrench icon" title="Séance Mécanicien" style="color: var(--color-accent-secondary);"></i> <strong>${session.time}</strong> (${session.duration} min) - ${session.sessionType}`
+                    : `<span class="session-day-badge" style="background-color: var(--color-accent-primary); color: var(--color-background-dark);">${session.category}</span> <strong>${session.time}</strong> (${session.duration} min) - ${session.sessionType}`;
+
                 li.innerHTML = `
                     <div class="session-info">
-                        <span class="session-day-badge">${dayNames[session.dayOfWeek]}</span>
-                        <strong>${session.time}</strong> (${session.duration} min) - 
-                        ${session.category} - ${session.sessionType}
+                        ${dayBadge}
+                        ${sessionDisplay}
                     </div>
                     <div class="session-actions">
                         <button class="edit-btn" title="Modifier"><i class="fas fa-edit"></i></button>
@@ -126,9 +142,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         updateSuggestions();
     }
-
+    
     function updateSuggestions() {
-        const uniqueCategories = [...new Set(sessions.map(s => s.category))];
+        const uniqueCategories = [...new Set(sessions.filter(s => !s.isMechanic).map(s => s.category))];
         const uniqueSessionTypes = [...new Set(sessions.map(s => s.sessionType))];
         categorySuggestions.innerHTML = uniqueCategories.map(c => `<option value="${c}"></option>`).join('');
         sessionTypeSuggestions.innerHTML = uniqueSessionTypes.map(st => `<option value="${st}"></option>`).join('');
@@ -136,61 +152,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sessionForm.addEventListener('submit', (e) => {
         e.preventDefault();
+        const isMechanic = isMechanicSessionCheckbox.checked;
         const dayOfWeek = parseInt(sessionDayInput.value);
-        const category = categoryInput.value.trim();
+        const category = isMechanic ? '' : categoryInput.value.trim();
         const sessionType = sessionTypeInput.value.trim();
-        const time = formatTimeForStorage(startTimeInput.value); 
+        const time = startTimeInput.value; 
         const duration = parseInt(durationInput.value);
 
-        if (isNaN(dayOfWeek) || !category || !sessionType || !time || !duration || duration <= 0) {
-            alert('Veuillez remplir tous les champs correctement (durée > 0).'); return;
+        if (isNaN(dayOfWeek) || (!isMechanic && !category) || !sessionType || !time || !duration || duration <= 0) {
+            alert('Veuillez remplir tous les champs correctement (Catégorie Pilote est requise si ce n\'est pas une séance mécanicien).'); 
+            return;
         }
 
-        const sessionCandidateDetails = { dayOfWeek, time, duration };
+        const sessionCandidate = { isMechanic, dayOfWeek, time, duration };
         
-        if (checkSessionOverlap(sessionCandidateDetails, sessions, editingSessionId)) {
-            alert("Erreur : Conflit d'horaire ! Cette séance se chevauche avec une autre séance existante le même jour.");
+        if (checkSessionOverlap(sessionCandidate, sessions, editingSessionId)) {
+            const type = isMechanic ? "mécanicien" : "pilote";
+            alert(`Erreur : Conflit d'horaire ! Cette séance se chevauche avec une autre séance de type '${type}' le même jour.`);
             return; 
         }
+
+        const sessionData = { 
+            id: editingSessionId || generateId(),
+            isMechanic, 
+            dayOfWeek, 
+            category, 
+            sessionType, 
+            time, 
+            duration 
+        };
 
         if (editingSessionId) {
             const index = sessions.findIndex(s => s.id === editingSessionId);
             if (index > -1) {
-                sessions[index] = { 
-                    ...sessions[index],
-                    dayOfWeek, 
-                    category, 
-                    sessionType, 
-                    time, 
-                    duration 
-                };
+                sessions[index] = sessionData;
             }
-            editingSessionId = null;
-            addSessionBtn.innerHTML = '<i class="fas fa-check icon"></i> Ajouter/Valider';
         } else {
-            sessions.push({ 
-                id: generateId(), 
-                dayOfWeek, 
-                category, 
-                sessionType, 
-                time, 
-                duration 
-            });
+            sessions.push(sessionData);
         }
         
-        categoryInput.value = '';
-        sessionTypeInput.value = '';
-        startTimeInput.value = '';
-        durationInput.value = '';
+        editingSessionId = null;
+        addSessionBtn.innerHTML = '<i class="fas fa-check icon"></i> Ajouter/Valider';
+        sessionForm.reset();
+        isMechanicSessionCheckbox.checked = false; 
+        categoryFormGroup.style.display = 'block';
+        sessionDayInput.value = dayOfWeek; 
         
-        categoryInput.focus();
         renderAdminList();
     });
 
     clearFormBtn.addEventListener('click', () => {
         sessionForm.reset();
-        const today = new Date().getDay(); 
-        sessionDayInput.value = today; 
+        const today = new Date().getDay();
+        sessionDayInput.value = today;
+        isMechanicSessionCheckbox.checked = false; 
+        categoryFormGroup.style.display = 'block';
         editingSessionId = null;
         addSessionBtn.innerHTML = '<i class="fas fa-check icon"></i> Ajouter/Valider';
         categoryInput.focus();
@@ -207,6 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const session = sessions.find(s => s.id === sessionId);
             if (session) {
                 sessionDayInput.value = session.dayOfWeek;
+                isMechanicSessionCheckbox.checked = !!session.isMechanic;
+                isMechanicSessionCheckbox.dispatchEvent(new Event('change'));
                 categoryInput.value = session.category;
                 sessionTypeInput.value = session.sessionType;
                 startTimeInput.value = session.time; 
@@ -228,8 +246,10 @@ document.addEventListener('DOMContentLoaded', () => {
             sessions = [];
             renderAdminList();
             sessionForm.reset();
-            const today = new Date().getDay(); 
+            const today = new Date().getDay();
             sessionDayInput.value = today;
+            isMechanicSessionCheckbox.checked = false; 
+            categoryFormGroup.style.display = 'block';
             editingSessionId = null;
             addSessionBtn.innerHTML = '<i class="fas fa-check icon"></i> Ajouter/Valider';
         }
@@ -252,11 +272,13 @@ document.addEventListener('DOMContentLoaded', () => {
     saveScheduleBtn.addEventListener('click', () => {
         const name = scheduleNameInput.value.trim();
         if (!name) {
-            alert('Veuillez donner un nom au planning.'); scheduleNameInput.focus(); return;
+            alert('Veuillez donner un nom au planning.');
+            scheduleNameInput.focus();
+            return;
         }
-        
+
         const scheduleData = {
-            sessions: sessions, 
+            sessions: sessions,
             settings: {
                 preSessionWarningMinutes: parseInt(preSessionWarningTimeInput.value) || 15,
                 mainTimerSize: parseFloat(mainTimerSizeInput.value) || 100,
@@ -269,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem(LOCAL_STORAGE_PREFIX + name, JSON.stringify(scheduleData));
             alert(`Planning '${name}' sauvegardé localement.`);
             populateLoadScheduleDropdown();
-             if(loadScheduleSelect.value !== name) {
+            if (loadScheduleSelect.value !== name) {
                 loadScheduleSelect.value = name;
             }
         } catch (error) {
@@ -281,27 +303,37 @@ document.addEventListener('DOMContentLoaded', () => {
     loadScheduleBtn.addEventListener('click', () => {
         const name = loadScheduleSelect.value;
         if (!name) {
-            alert('Veuillez sélectionner un planning à charger.'); return;
+            alert('Veuillez sélectionner un planning à charger.');
+            return;
         }
         const savedScheduleJSON = localStorage.getItem(LOCAL_STORAGE_PREFIX + name);
         if (savedScheduleJSON) {
             try {
                 const loadedData = JSON.parse(savedScheduleJSON);
                 
-                if (loadedData.sessions && loadedData.settings) { 
-                    sessions = loadedData.sessions;
+                const normalizeSessions = (sessionList) => {
+                    if (!Array.isArray(sessionList)) return [];
+                    return sessionList.map(s => ({
+                        ...s,
+                        isMechanic: !!s.isMechanic,
+                        id: s.id || generateId()
+                    }));
+                };
+
+                if (loadedData.sessions && loadedData.settings) {
+                    sessions = normalizeSessions(loadedData.sessions);
                     preSessionWarningTimeInput.value = loadedData.settings.preSessionWarningMinutes || 15;
                     mainTimerSizeInput.value = loadedData.settings.mainTimerSize || 100;
                     titleSizeInput.value = loadedData.settings.titleSize || 100;
                     secondaryTimerSizeInput.value = loadedData.settings.secondaryTimerSize || 100;
-                } else { 
-                    sessions = loadedData; 
+                } else {
+                    sessions = normalizeSessions(loadedData);
                     preSessionWarningTimeInput.value = 15;
                     mainTimerSizeInput.value = 100;
                     titleSizeInput.value = 100;
                     secondaryTimerSizeInput.value = 100;
                 }
-                
+
                 preSessionWarningTimeLabel.textContent = preSessionWarningTimeInput.value;
                 mainTimerSizeLabel.textContent = mainTimerSizeInput.value;
                 titleSizeLabel.textContent = titleSizeInput.value;
@@ -320,28 +352,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     deleteScheduleBtn.addEventListener('click', () => {
-        const name = scheduleNameInput.value.trim(); 
+        const name = scheduleNameInput.value.trim();
         if (!name) {
-            alert('Aucun planning actif à supprimer (vérifiez le nom du planning).'); return;
+            alert('Aucun planning actif à supprimer (vérifiez le nom du planning).');
+            return;
         }
-        if (!localStorage.getItem(LOCAL_STORAGE_PREFIX + name)){
-            alert(`Le planning nommé '${name}' n'existe pas dans le stockage.`); return;
+        if (!localStorage.getItem(LOCAL_STORAGE_PREFIX + name)) {
+            alert(`Le planning nommé '${name}' n'existe pas dans le stockage.`);
+            return;
         }
 
         if (confirm(`Voulez-vous vraiment supprimer le planning '${name}' ?`)) {
             localStorage.removeItem(LOCAL_STORAGE_PREFIX + name);
             alert(`Planning '${name}' supprimé.`);
             populateLoadScheduleDropdown();
-            if (scheduleNameInput.value === name) { 
+            if (scheduleNameInput.value === name) {
                 scheduleNameInput.value = '';
-                sessions = []; 
+                sessions = [];
                 preSessionWarningTimeInput.value = 15;
                 renderAdminList();
             }
         }
     });
-
-    launchDisplayBtn.addEventListener('click', () => {
+    
+    const launchDisplay = (viewType) => {
         const name = scheduleNameInput.value.trim();
         if (!name) {
             alert("Veuillez d'abord nommer et sauvegarder le planning actuel, ou charger un planning existant.");
@@ -362,15 +396,21 @@ document.addEventListener('DOMContentLoaded', () => {
                  alert("Aucune session dans le planning actuel et le planning n'est pas sauvegardé. Impossible de lancer l'affichage."); return;
             }
         }
-        window.open(`display.html?schedule=${encodeURIComponent(name)}`, '_blank');
-    });
+        
+        let url = `display.html?schedule=${encodeURIComponent(name)}&view=${viewType}`;
+        window.open(url, '_blank');
+    };
+
+    launchDisplayBtn.addEventListener('click', () => launchDisplay('pilote'));
+    launchMechanicDisplayBtn.addEventListener('click', () => launchDisplay('mecanicien'));
+
 
     function initAdmin() {
         renderAdminList();
         populateLoadScheduleDropdown();
-        const today = new Date().getDay(); 
-        sessionDayInput.value = today; 
-        preSessionWarningTimeInput.value = 15; 
+        const today = new Date().getDay();
+        sessionDayInput.value = today;
+        preSessionWarningTimeInput.value = 15;
         mainTimerSizeInput.value = 100;
         titleSizeInput.value = 100;
         secondaryTimerSizeInput.value = 100;

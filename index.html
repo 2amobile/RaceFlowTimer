@@ -26,7 +26,7 @@
                     <div class="schedule-management">
                         <div class="form-group">
                             <label for="scheduleName"><i class="fas fa-file-signature icon"></i> Nom du Planning Actuel/Nouveau :</label>
-                            <input type="text" id="scheduleName" placeholder="Ex: Week-end FSBK Le Mans">
+                            <input type="text" id="scheduleName" placeholder="Ex: Week-end FSVK Le Mans">
                         </div>
                         <div class="button-group">
                             <button id="saveSchedule" class="btn btn-primary"><i class="fas fa-save icon"></i> Sauvegarder</button>
@@ -43,8 +43,12 @@
                         <button id="loadScheduleBtn" class="btn btn-secondary"><i class="fas fa-download icon"></i> Charger</button>
                     </div>
                      <div class="display-launch card-section">
-                        <h3 class="card-subtitle"><i class="fas fa-tv icon"></i> Affichage Pilote</h3>
-                        <button id="launchDisplayBtn" class="btn btn-launch"><i class="fas fa-rocket icon"></i> Lancer l'Affichage Pilote</button>
+                        <h3 class="card-subtitle"><i class="fas fa-tv icon"></i> Affichage</h3>
+                        <div class="button-group">
+                            <button id="launchDisplayBtn" class="btn btn-launch"><i class="fas fa-rocket icon"></i> Affichage Pilote</button>
+                            <button id="launchMechanicDisplayBtn" class="btn btn-secondary"><i class="fas fa-wrench icon"></i> Affichage Mécanicien</button>
+                        </div>
+                        <p class="note">Le planning actif (nommé ci-dessus) sera utilisé.</p>
                     </div>
                     <div class="settings-launch card-section">
                         <button id="openSettingsModalBtn" class="btn btn-secondary"><i class="fas fa-sliders-h icon"></i> Réglages d'Affichage</button>
@@ -77,14 +81,21 @@
                                 <option value="0">Dimanche</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="category"><i class="fas fa-tags icon"></i> Catégorie :</label>
-                            <input type="text" id="category" list="categorySuggestions" required placeholder="Ex: Moto3, Promotion, etc.">
+                        
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="isMechanicSession">
+                            <label for="isMechanicSession">Séance Mécanicien</label>
+                        </div>
+
+                        <div id="category-form-group" class="form-group">
+                            <label for="category"><i class="fas fa-tags icon"></i> Catégorie Pilote :</label>
+                            <input type="text" id="category" list="categorySuggestions" placeholder="Ex: Moto3, Promotion, etc.">
                             <datalist id="categorySuggestions"></datalist>
                         </div>
+
                         <div class="form-group">
-                            <label for="sessionType"><i class="fas fa-clipboard-list icon"></i> Type de Séance :</label>
-                            <input type="text" id="sessionType" list="sessionTypeSuggestions" required placeholder="Ex: Essais Libres 1, Qualif., Course">
+                            <label for="sessionType"><i class="fas fa-clipboard-list icon"></i> Description de la Séance :</label>
+                            <input type="text" id="sessionType" list="sessionTypeSuggestions" required placeholder="Ex: Essais Libres 1, Intervention Pneus">
                             <datalist id="sessionTypeSuggestions"></datalist>
                         </div>
                         <div class="form-row">

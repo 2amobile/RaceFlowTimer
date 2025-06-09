@@ -68,24 +68,37 @@ document.addEventListener('DOMContentLoaded', () => {
         mainCountdownTimer.style.fontSize = `calc(var(--dynamic-font-unit) * ${baseSizes.mainTimer * mainTimerMultiplier})`;
         
         mainCountdownCategory.style.fontSize = `calc(var(--dynamic-font-unit) * ${baseSizes.titles * titleMultiplier})`;
-        mainCountdownSessionType.style.fontSize = `calc(var(--dynamic-font-unit) * ${baseSizes.titles * 0.8 * titleMultiplier})`;
+        mainCountdownSessionType.style.fontSize = `calc(var(--dynamic-font-unit) * ${baseSizes.titles * 0.65 * titleMultiplier})`;
         mainCountdownStatus.style.fontSize = `calc(var(--dynamic-font-unit) * ${baseSizes.titles * 0.75 * titleMultiplier})`;
-        upcomingSessionsList.style.fontSize = `calc(var(--dynamic-font-unit) * 1.8 * titleMultiplier * 0.9)`;
-        document.querySelector('.upcoming-title').style.fontSize = `calc(var(--dynamic-font-unit) * 3 * titleMultiplier * 0.9)`;
+        
+        const upcomingTitle = document.querySelector('.upcoming-title');
+        if (upcomingTitle) {
+            upcomingTitle.style.fontSize = `calc(var(--dynamic-font-unit) * 3 * titleMultiplier * 0.9)`;
+        }
+        if (upcomingSessionsList) {
+            upcomingSessionsList.style.fontSize = `calc(var(--dynamic-font-unit) * 1.8 * titleMultiplier * 0.9)`;
+        }
 
-
-        secondaryCountdown.style.fontSize = `calc(var(--dynamic-font-unit) * ${baseSizes.secondaryTimer * secondaryTimerMultiplier})`;
+        if (secondaryCountdown) {
+            secondaryCountdown.style.fontSize = `calc(var(--dynamic-font-unit) * ${baseSizes.secondaryTimer * secondaryTimerMultiplier})`;
+        }
     }
 
     function loadScheduleFromUrlAndStorage() {
         const urlParams = new URLSearchParams(window.location.search);
         const scheduleName = urlParams.get('schedule');
+        const viewFilter = urlParams.get('view') || 'pilote'; 
 
         assignedCategoryColors = {}; 
         colorIndex = 0;
 
+        let displayName = scheduleName ? `Planning: ${scheduleName}` : "Aucun Planning";
+        if (viewFilter === 'mecanicien') {
+            displayName += ` (Vue: Mécanicien)`; 
+        }
+
         if (currentScheduleNameDisplay) {
-            currentScheduleNameDisplay.textContent = scheduleName ? `Planning: ${scheduleName}` : "Aucun Planning";
+            currentScheduleNameDisplay.textContent = displayName;
         }
         
         if (!scheduleName) {
@@ -97,15 +110,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savedScheduleJSON) {
             try {
                 const loadedData = JSON.parse(savedScheduleJSON);
+                
+                let allSessions = []; 
                 if (loadedData.sessions && loadedData.settings) {
-                    sessions = loadedData.sessions;
+                    allSessions = loadedData.sessions.map(s => ({...s, isMechanic: !!s.isMechanic}));
                     settings.preSessionWarningMinutes = parseInt(loadedData.settings.preSessionWarningMinutes) || 15;
                     settings.mainTimerSize = parseFloat(loadedData.settings.mainTimerSize) || 100;
                     settings.titleSize = parseFloat(loadedData.settings.titleSize) || 100;
                     settings.secondaryTimerSize = parseFloat(loadedData.settings.secondaryTimerSize) || 100;
                 } else {
-                    sessions = loadedData;
+                    allSessions = loadedData.map(s => ({...s, isMechanic: !!s.isMechanic}));
                 }
+
+                if (viewFilter === 'mecanicien') {
+                    sessions = allSessions.filter(session => session.isMechanic);
+                } else { 
+                    sessions = allSessions.filter(session => !session.isMechanic);
+                }
+
                 applyDynamicStyles();
                 return true;
             } catch (error) {
@@ -136,12 +158,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!sessions || sessions.length === 0) {
             const urlParams = new URLSearchParams(window.location.search);
+            const viewFilter = urlParams.get('view') || 'pilote';
             if (urlParams.get('schedule')) {
-                 if(mainCountdownStatus) mainCountdownStatus.textContent = "PLANNING VIDE";
-                 if(mainCountdownCategory) mainCountdownCategory.textContent = "--";
+                 if(mainCountdownStatus) mainCountdownStatus.textContent = `AUCUNE SÉANCE`;
+                 if(mainCountdownCategory) mainCountdownCategory.textContent = `POUR LA VUE "${viewFilter.toUpperCase()}"`;
                  if(mainCountdownSessionType) mainCountdownSessionType.textContent = "--";
                  if(mainCountdownTimer) mainCountdownTimer.textContent = "--:--";
-                 if(upcomingSessionsList) upcomingSessionsList.innerHTML = '<li class="empty-state">Ce planning ne contient aucune séance.</li>';
+                 if(upcomingSessionsList) upcomingSessionsList.innerHTML = '<li class="empty-state">Aucune séance ne correspond à cette vue.</li>';
             }
             return;
         }
@@ -177,9 +200,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const minutesCurrent = Math.floor(remainingSecondsCurrent / 60);
             const secondsCurrent = remainingSecondsCurrent % 60;
             
+            const currentCategoryText = currentSession.isMechanic ? '' : `${currentSession.category} - `;
             secondaryCountdown.innerHTML = `
                 <i class="fas fa-play-circle icon" style="color:var(--color-success)"></i> 
-                ${currentSession.category} - ${currentSession.sessionType} | Temps restant : 
+                ${currentCategoryText}${currentSession.sessionType} | Temps restant : 
                 <span class="highlight">${String(minutesCurrent).padStart(2, '0')}:${String(secondsCurrent).padStart(2, '0')}</span>
             `;
             secondaryCountdown.style.display = 'block';
@@ -190,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const secondsNext = timeToNextSessionSeconds % 60;
             
             mainCountdownStatus.textContent = `${dayNames[nextSession.dayOfWeek]} - DÉBUT DANS`;
-            mainCountdownCategory.textContent = nextSession.category;
+            mainCountdownCategory.textContent = nextSession.category || '';
             mainCountdownSessionType.textContent = nextSession.sessionType;
             mainCountdownTimer.textContent = `${String(minutesNext).padStart(2, '0')}:${String(secondsNext).padStart(2, '0')}`;
             mainCountdownTimer.classList.add('imminent');
@@ -207,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const seconds = remainingSeconds % 60;
 
             mainCountdownStatus.textContent = `${dayNames[currentSession.dayOfWeek]} - EN COURS`;
-            mainCountdownCategory.textContent = currentSession.category;
+            mainCountdownCategory.textContent = currentSession.category || '';
             mainCountdownSessionType.textContent = currentSession.sessionType;
             mainCountdownTimer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             mainCountdownTimer.classList.add('active');
@@ -219,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const timeToNextSessionMillis = nextSession.dateTime - now;
             const timeToNextSessionSeconds = Math.max(0, Math.floor(timeToNextSessionMillis / 1000));
 
-            mainCountdownCategory.textContent = nextSession.category;
+            mainCountdownCategory.textContent = nextSession.category || '';
             mainCountdownSessionType.textContent = nextSession.sessionType;
 
             if (timeToNextSessionMillis <= preSessionWarningMillis && timeToNextSessionMillis > 0) {
@@ -273,9 +297,10 @@ document.addEventListener('DOMContentLoaded', () => {
             upcomingForDisplay.forEach(session => {
                 const li = document.createElement('li');
                 const dayBadge = now.getDay() !== session.dayOfWeek ? `<span class="session-day-badge">${dayNamesShort[session.dayOfWeek]}</span>` : '';
-                const categoryColor = getCategoryColor(session.category);
+                const categoryColor = session.isMechanic ? 'var(--color-accent-secondary)' : getCategoryColor(session.category);
                 li.style.borderLeftColor = categoryColor;
-                li.innerHTML = `${dayBadge}<strong>${session.time}</strong> (${session.duration} min) - ${session.category} - ${session.sessionType}`;
+                const categoryText = !session.isMechanic ? `${session.category} - ` : '';
+                li.innerHTML = `${dayBadge}<strong>${session.time}</strong> (${session.duration} min) - ${categoryText}${session.sessionType}`;
                 upcomingSessionsList.appendChild(li);
             });
         } else if (!currentSession && !nextSession && sessions.length > 0){ 
@@ -307,12 +332,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function initDisplay() {
-        const loadedSuccessfully = await loadScheduleFromUrlAndStorage(); 
-        if (loadedSuccessfully) {
+        // La fonction load... est maintenant asynchrone, nous utilisons await
+        if (await loadScheduleFromUrlAndStorage()) { 
             if (mainInterval) clearInterval(mainInterval);
             updateDisplayLogic(); 
             mainInterval = setInterval(updateDisplayLogic, 1000);
         } else {
+            // Si le chargement échoue, l'erreur est déjà affichée
+            // On maintient l'horloge actuelle si elle existe
             if(currentTimeDisplay) currentTimeDisplay.textContent = formatTimeWithSecondsForDisplay(new Date());
             setInterval(() => {
                 if(currentTimeDisplay) currentTimeDisplay.textContent = formatTimeWithSecondsForDisplay(new Date());

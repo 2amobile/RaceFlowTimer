@@ -107,7 +107,6 @@ body {
 @media (min-width: 1200px) { 
     .admin-grid {
         grid-template-columns: 1fr 2fr 1fr; 
-        grid-template-rows: auto;
     }
     .large-card { 
         grid-column: 2 / 3; 
@@ -175,6 +174,21 @@ body {
     color: var(--color-accent-primary);
     margin-right: 2px;
 }
+
+.checkbox-group {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--padding-small);
+}
+.checkbox-group label {
+    margin-bottom: 0;
+}
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-accent-primary);
+}
+
 
 input[type="text"],
 input[type="time"],
@@ -587,7 +601,7 @@ input[type="range"].slider::-moz-range-thumb {
     color: var(--color-background-dark);
     padding: calc(var(--dynamic-font-unit) * 0.2) calc(var(--dynamic-font-unit) * 0.6);
     border-radius: var(--border-radius-small);
-    font-size: 0.8em; /* Relatif à son parent li */
+    font-size: 0.8em; 
     font-weight: 700;
     margin-right: calc(var(--dynamic-font-unit) * 0.6); 
     vertical-align: middle;
@@ -647,7 +661,7 @@ input[type="range"].slider::-moz-range-thumb {
     background: var(--color-accent-primary);
 }
 
-/* === NOUVEAUX STYLES POUR LA MODALE === */
+/* === STYLES POUR LA MODALE === */
 .modal {
     display: none; 
     position: fixed; 
